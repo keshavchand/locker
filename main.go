@@ -52,20 +52,10 @@ func child() {
 
 	must(syscall.Mount("proc", "proc", "proc", 0, ""))
 
-	// dirTree("/busybox sh", 0)
-
-	// lookup google.com on [::1]:53: read udp [::1]:53225->[::1]:53: read: connection refused
-	// runCmd(config.LogIPCommands, "ip", "link", "set", "lo", "up")
-	// runCmd(config.LogIPCommands, "ip", "addr", "add", "192.168.1.1/24", "dev", "lo")
-
-	// create bridge
-	// runCmd(config.LogIPCommands, "ip", "link", "add", "name", "br0", "type", "bridge")
-	// runCmd(config.LogIPCommands, "ip", "link", "set", "dev", "br0", "up")
-	// runCmd(config.LogIPCommands, "ip", "addr", "add", "192.168.1.1/24", "dev", "br0")
-
 	// NOTE: the binary must be a static compiled binary
 	// Go binaries should be compiled with
 	// -tags netgo -ldflags '-extldflags "-static"'
+	// XXX: Extrypoint should be provided by user
 	location := "./main"
 	cmd := exec.CommandContext(context.TODO(), location, "sh")
 	cmd.Stdout = os.Stdout
