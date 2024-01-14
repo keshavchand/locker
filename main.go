@@ -12,6 +12,7 @@ import (
 
 type Config struct {
 	LogIPCommands bool
+	TargetDir     string
 }
 
 var config Config
@@ -22,7 +23,10 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 	log.SetPrefix("Locker: ")
 	childFlag := flag.Bool("child", false, "run as child")
+	chrootDir := flag.String("targetdir", "rootfs", "targetdir directory")
 	flag.Parse()
+
+	config.TargetDir = *chrootDir
 
 	if childFlag == nil || *childFlag == false {
 		parent()
@@ -36,9 +40,16 @@ func child() {
 	cwd, err := os.Getwd()
 	must(err)
 	log.Printf("Running as child process with pid: %d @ %s", pid, cwd)
-	must(syscall.Chroot("rootfs"))
+
+	must(syscall.Chroot(config.TargetDir))
 	must(os.Chdir("/"))
-	must(os.MkdirAll("/proc", 0755))
+
+	if _, err := os.Stat("/proc"); os.IsNotExist(err) {
+		log.Println("/proc directory does not exist, creating it")
+		must(os.Mkdir("/proc", 0755))
+		defer os.RemoveAll("/proc")
+	}
+
 	must(syscall.Mount("proc", "proc", "proc", 0, ""))
 
 	// dirTree("/busybox sh", 0)
@@ -69,7 +80,9 @@ func child() {
 
 func parent() {
 	location := "/proc/self/exe"
-	cmd := exec.CommandContext(context.TODO(), location, "-child")
+	args := os.Args[1:]
+	args = append(args, "--child")
+	cmd := exec.CommandContext(context.TODO(), location, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
